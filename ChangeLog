@@ -1,0 +1,26 @@
+19.01.2013  Lars Windolf <lars.lindner@gmail.com>
+
+	Version 0.2.1
+
+	* Fixes error message on feed parsing error.
+	  (reported by JSC)
+	* Changed license from Perl to GPLv2 or later
+	* Set up github account
+
+
+09.12.2012  Lars Windolf <lars.lindner@gmail.com>
+
+	Version 0.2
+
+	* New silent switch (-s)
+	* New verbose switch (-v)
+	* Works with older distros now
+	* Fixes false positives
+
+
+16.09.2012  Lars Windolf <lars.lindner@gmail.com>
+
+	Version 0.1
+
+	* Initial release
+	* Support to check recent distributions of Ubuntu and CentOS
