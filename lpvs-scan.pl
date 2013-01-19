@@ -26,6 +26,7 @@ use Term::ANSIColor;
 use XML::LibXSLT;
 use XML::LibXML;
 use LWP::UserAgent;
+use Getopt::Std;
 
 ################################################################################
 # OS Configuration
@@ -73,12 +74,12 @@ my %config = (
 my $verbose = 0;
 my $silent = 0;
 my $debug = 0;
+my %opts;
 
-# FIXME: Do proper parameter checking
-if(defined($ARGV[0])) {
-$silent = 1 if($ARGV[0] eq "-s");
-$verbose = 1 if($ARGV[0] eq "-v");
-}
+getopts('svo:', \%opts);
+
+$silent = 1 if($opts{'s'});
+$verbose = 1 if($opts{'v'});
 
 # Check for color support
 unless(-t 1 and `tput colors` >= 8) {
@@ -89,14 +90,24 @@ unless(-t 1 and `tput colors` >= 8) {
 # Startup Checks
 ################################################################################
 
-my $os = `lsb_release -is`;
+# First try lsb_release (we expect this to exist on Ubuntu, but have a fallback for CentOS)
+my $os = `lsb_release -is 2>/dev/null`;
 chomp $os;
 
-my $release = `lsb_release -rs`;
-chomp $release;
+# CentOS fallback 
+if(-f "/etc/redhat-release") {
+	# /etc/redhat-release should have something like "CentOS release 5.x (xxx)
+	my $tmp = `cat /etc/redhat-release`;
+	if($tmp =~ /^CentOS\s+release\s+/) {
+		$os = "CentOS";
+	} else {
+		print STDERR "This Redhat-based distribution is not supported! Consider hacking $0 to add support.\n";
+		exit(1);
+	}
+}
 
 if($os eq "") {
-	print STDERR "Could not determine OS. Ensure 'lsb_release -s -i' works!";
+	print STDERR "Could not determine OS. Ensure 'lsb_release -s -i' works!\n";
 	exit(1);
 }
 

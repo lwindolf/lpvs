@@ -4,6 +4,9 @@
 
 	* Fixes error message on feed parsing error.
 	  (reported by JSC)
+	* Allow for missing lsb_release tool on CentOS minimal install
+	  (reported by Mikhaul Emelchenkov)
+	* Proper options parsing with getops
 	* Changed license from Perl to GPLv2 or later
 	* Set up github account
 
