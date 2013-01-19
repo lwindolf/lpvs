@@ -126,7 +126,7 @@ $ua->env_proxy;
  
 my $response = $ua->get($osConfig->{'feed'});
 unless ($response->is_success) {
-	die "Failed to fetch advisory feed! ($response->status_line)";
+	die "Failed to fetch advisory feed! (".$response->status_line.")";
 }
 
 # XSLT for Feed Normalization
