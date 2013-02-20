@@ -1,0 +1,46 @@
+#!/usr/bin/perl -w
+
+# Copyright (c) 2012-2013  Lars Windolf <lars.lindner@gmail.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+use strict;
+use File::Basename;
+
+sub usage {
+	print "\n";
+	print "Syntax: lpvs.pl <command> [options]\n";
+	print "\n";
+	print "Commands:\n";
+	print "\n";
+	print "   scan		Perform a vulnerability scan\n";
+	print "   ignore	Whitelist a vulnerability\n";
+	print "   help		Give help on a command\n";
+	print "\n";
+	exit(1);
+}
+
+usage() if($#ARGV == -1);
+my $command = shift(@ARGV);
+
+if($command eq "help") {
+	usage() if($#ARGV == 0);
+} 
+elsif($command eq "scan") {
+	# Scanner is separate script, so for historic reasons just launch it
+	exec ((dirname $0) . "/lpvs-scan.pl") or die "Could not run scanner: $!";
+}
+
+usage();
