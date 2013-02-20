@@ -26,5 +26,5 @@ To install them on Ubuntu run the following command
 Finally copy the "lpvs-scan.pl" to a location of your choice and provide it
 with the proper permissions. For example as root run:
 
-   cp lpvs-scan.pl /usr/local/bin
-   chmod a+x /usr/local/bin/lpvs-scan.pl
+   cp lpvs lpvs-scan.pl /usr/local/bin
+   cd /usr/local/bin && chmod a+x lpvs lpvs-scan.pl
