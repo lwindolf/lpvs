@@ -21,7 +21,7 @@ To install them on CentOS run the following command
 
 To install them on Ubuntu run the following command
 
-   apt-get install libxml-libxslt-per
+   apt-get install libxml-libxslt-perl
 
 Finally copy the "lpvs-scan.pl" to a location of your choice and provide it
 with the proper permissions. For example as root run:
