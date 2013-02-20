@@ -1,7 +1,5 @@
 #!/usr/bin/perl -w
 
-# Version 0.2.1, 19.01.2013
-#
 # Copyright (c) 2012-2013  Lars Windolf <lars.lindner@gmail.com>
 # Copyright (C) 2004-2010 John Peacock <jpeacock@cpan.org>
 #
