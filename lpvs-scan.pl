@@ -373,6 +373,16 @@ foreach my $item ($doc->documentElement()->getChildrenByTagName("item")) {
 	my $vulnerable = 0;
 	my %packages;
 
+        # Skip vulnerability if acknowledged
+        if($title =~ /^\s*([a-zA-Z0-9\-_\.]+):/) {
+                if(-f "$ENV{HOME}/.lpvs/$1") {
+                        print color 'bold yellow';
+                        print "$title (acknowledged)\n";
+                        print color 'reset';
+                        next;
+                }
+        }
+
 	# Determine packages affected by advisory
 	#
 	# a) from with description text

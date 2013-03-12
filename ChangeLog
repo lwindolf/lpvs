@@ -3,6 +3,7 @@
 	Version 0.3
 
 	* Added "lpvs" tool to launch scanner and other commands.
+	* Allow skipping acknowledged vulnerabilities (~/.lpvs)
 
 
 19.01.2013  Lars Windolf <lars.lindner@gmail.com>
