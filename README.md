@@ -10,7 +10,7 @@ For more information visit the homepage http://lzone.de/lpvs
 Installation
 ============
 
-Ensure to have the required libraries installed:
+Ensure to have Perl 5.10 and the required libraries installed:
 
    * XML::LibXSLT
    * XML::LibXML
