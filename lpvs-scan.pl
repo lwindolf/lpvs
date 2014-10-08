@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright (c) 2012-2013  Lars Windolf <lars.lindner@gmail.com>
+# Copyright (c) 2012-2014  Lars Windolf <lars.windolf@gmx.de>
 # Copyright (C) 2004-2010 John Peacock <jpeacock@cpan.org>
 #
 # The versioncmp() method is from the CPAN Version.pm from John Peacock.
