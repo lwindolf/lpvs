@@ -213,7 +213,7 @@ sub split_standard_version {
 		if($debug) {
 			print "split w/o '-': ";
 			print " epoch=$+{epoch}" if($+{'epoch'});
-			print " up=$+{upstream} rev=$+{revision} ($version)\n";
+			print " up=$+{upstream} ($version)\n";
 		}
 		%v = %+;
 	}
