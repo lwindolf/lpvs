@@ -3,8 +3,6 @@
 # Copyright (c) 2012-2014  Lars Windolf <lars.windolf@gmx.de>
 # Copyright (C) 2004-2010 John Peacock <jpeacock@cpan.org>
 #
-# The versioncmp() method is from the CPAN Version.pm from John Peacock.
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -194,171 +192,26 @@ my $doc = $parser->parse_string($stylesheet->output_string($results));
 ################################################################################
 
 ################################################################################
-# Debian (not Ubuntu) and RPM version splitter
-################################################################################
-sub split_standard_version {
-	my ($version) = @_;
-	my %v;
-
-	if($version =~ /-/) {
-		$version =~ /^((?<epoch>\d+):)?(?<upstream>.+)-(?<revision>[^-]+)/;
-		if($debug) {
-			print "split w/ '-': ";
-			print " epoch=$+{epoch}" if($+{'epoch'});
-			print " up=$+{upstream} rev=$+{revision} ($version)\n";
-		}
-		%v = %+;
-	} else {
-		$version =~ /^((?<epoch>\d+):)?(?<upstream>.+)/;
-		if($debug) {
-			print "split w/o '-': ";
-			print " epoch=$+{epoch}" if($+{'epoch'});
-			print " up=$+{upstream} ($version)\n";
-		}
-		%v = %+;
-	}
-
-	$v{'epoch'} = "" unless(defined($v{'epoch'}));
-	$v{'revision'} = "" unless(defined($v{'revision'}));
-
-	# Removed suffixes: e.g. "15.0.1+build1-0ubuntu0.12.04.1" will lead
-	# to $v{'version'} set to "15.0.1+build1" which will fail to compare
-	# correctly to say "15.0+build1", so we strip useless "+" suffixes
-	$v{'upstream'} =~ s/\+.+//;
-
-	return %v;
-}
-
-################################################################################
-# Ubuntu splitter: like Debian, but has a second revision separated by "ubuntu"
-#
-# Example: "2.6.12-1ubuntu1" -> version "2.6.12" revision "1" revision2 "1"
-################################################################################
-sub split_ubuntu_version {
-	my ($version) = @_;
-	my $ubuntu_revision;
-	my %v;
-
-	if($version =~ s/ubuntu([\d.]+)$//g) {
-		$ubuntu_revision = $1;
-	}
-
-	%v = split_standard_version($version);
-
-	if(defined($ubuntu_revision)) {
-		print "   ubuntu revision=$ubuntu_revision\n" if($debug);
-		$v{'revision2'} = $ubuntu_revision;
-	}
-
-	return %v;
-}
-
-################################################################################
-# Generic splitter method
-#
-# $1	version string to split
-#
-# return hash with version parts
-################################################################################
-sub split_version {
-
-	return split_ubuntu_version($_[0]) if($os eq "Ubuntu");
-	return split_standard_version($_[0]);
-}
-
-################################################################################
-# This method is from Ed Avis Sort-Versions-1.5 
-# (http://search.cpan.org/~edavis/Sort-Versions-1.5/Versions.pm)
-#
-# Copyright (c) 1996, Kenneth J. Albanowski. All rights reserved.  This
-# program is free software; you can redistribute it and/or modify it under
-# the same terms as Perl itself.
-################################################################################
-sub versioncmp( $$ ) {
-    return 0 unless(defined($_[0])); 
-    return 0 unless(defined($_[1]));
-
-    my @A = ($_[0] =~ /([-.]|\d+|[^-.\d]+)/g);
-    my @B = ($_[1] =~ /([-.]|\d+|[^-.\d]+)/g);
-
-    my ($A, $B);
-    while (@A and @B) {
-	$A = shift @A;
-	$B = shift @B;
-
-	if ($A eq '-' and $B eq '-') {
-	    next;
-	} elsif ( $A eq '-' ) {
-	    return -1;
-	} elsif ( $B eq '-') {
-	    return 1;
-	} elsif ($A eq '.' and $B eq '.') {
-	    next;
-	} elsif ( $A eq '.' ) {
-	    return -1;
-	} elsif ( $B eq '.' ) {
-	    return 1;
-	} elsif ($A =~ /^\d+$/ and $B =~ /^\d+$/) {
-	    if ($A =~ /^0/ || $B =~ /^0/) {
-		return $A cmp $B if $A cmp $B;
-	    } else {
-		return $A <=> $B if $A <=> $B;
-	    }
-	} else {
-	    $A = uc $A;
-	    $B = uc $B;
-	    return $A cmp $B if $A cmp $B;
-	}	
-    }
-
-    @A <=> @B;
-}
-
-################################################################################
 # Split a version in Debian format and compare it's parts. As it works fine for
 # RPM too we do not use a separate comparison for now.
 ################################################################################
 sub compare_versions {
 	my ($version1, $version2) = @_;
 
-	# FIXME implement Debian ~ sorting exception (~ sorts earlier than everything
-	# FIXME implement Debian number sorting expection (numbers sort earlier than letters)
-
-	# Handle according to Debian format [epoch:]upstream_version[-debian_revision] 
-
 	# Split everything
 	print "Compare $version1 <=> $version2...\n" if($debug);
-	my %v1 = split_version($version1);
-	my %v2 = split_version($version2);
-	my $result;
+	return 0 if($version1 eq $version2);
 
-	$result = ($v1{'epoch'} cmp $v2{'epoch'});
-	if($result != 0) {
-		print "   => epoch differs: ($v1{epoch} <=> $v2{epoch}) = $result\n" if($debug);
-		return $result;
+	if($osConfig->{'pkgtype'} eq 'deb') {
+		`dpkg --compare-versions "$version1" lt "$version2"`;
+		return $?;
+	} elsif($osConfig->{'pkgtype'} eq 'rpm') {
+		my $dir = dirname($0);
+		`$dir/rpm_vercmp.py "$version1" "$version2"`;
+		return $?;
+	} else {
+		die "No version comparison for this pkgtype yet.";
 	}
-
-	$result = versioncmp($v1{'upstream'}, $v2{'upstream'});
-	if($result != 0) {
-		print "   => upstream differs: ($v1{upstream} <=> $v2{upstream}) = $result\n" if($debug);
-		return $result;
-	}
-
-	$result = versioncmp($v1{'revision'}, $v2{'revision'});
-	if($result != 0) {
-		print "   => revision differs: ($v1{revision} <=> $v2{revision}) = $result\n" if($debug);
-		return $result;
-	}
-
-	if(defined($v1{'revision2'})) {
-		$result = versioncmp($v1{'revision2'}, $v2{'revision2'});
-		if($result != 0) {
-			print "   => revision2 differs: ($v1{revision2} <=> $v2{revision2}) = $result\n" if($debug);
-			return $result;
-		}
-	}
-
-	return 0;
 }
 
 ################################################################################
