@@ -1,3 +1,10 @@
+	Version 0.4
+
+	* Replaced propietary version comparison with tools/library
+	  functions available for .deb and .rpm packages
+	* Avoid checking .deb packages in state 'rc'
+
+
 20.02.2013  Lars Windolf <lars.lindner@gmail.com>
 
 	Version 0.3
