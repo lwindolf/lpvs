@@ -39,14 +39,14 @@ my %config = (
 			'pkgsource'	=> 'description',
 			'feed'		=> 'http://www.ubuntu.com/usn/rss.xml',
 			'upgrades'	=> [('/usr/lib/update-notifier/apt-check -p', $apt_show_versions, $aptitude)],
-			'revsplit'	=> '(-|ubuntu)'
+			'revsplit'	=> '(-|~|ubuntu)'
 		},
 		#'Debian' => {
 		#	'pkgtype'	=> 'deb',
 		#	'pkgsource'	=> 'link',
 		#	'feed'		=> 'http://www.debian.org/security/dsa-long'
 		#	'upgrades'	=> [('debsecan --format packages', $apt_show_versions, $aptitude)],
-		#	'revsplit'	=> '-'
+		#	'revsplit'	=> '(-|~)'
 		#},
 		#'Redhat' => {
 		#	'pkgtype'	=> 'rpm',
