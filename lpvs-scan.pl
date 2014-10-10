@@ -29,17 +29,24 @@ use Getopt::Std;
 # OS Configuration
 ################################################################################
 
+my $apt_show_versions = 'apt-show-versions |grep "security upgradeable"';
+my $aptitude = 'aptitude search "?and(~U,~Asecurity)"';
+
 my %config = (
 	'os' => {
 		'Ubuntu' => {
 			'pkgtype'	=> 'deb',
 			'pkgsource'	=> 'description',
-			'feed'		=> 'http://www.ubuntu.com/usn/rss.xml'
+			'feed'		=> 'http://www.ubuntu.com/usn/rss.xml',
+			'upgrades'	=> [('/usr/lib/update-notifier/apt-check -p', $apt_show_versions, $aptitude)],
+			'revsplit'	=> '(-|ubuntu)'
 		},
 		#'Debian' => {
 		#	'pkgtype'	=> 'deb',
 		#	'pkgsource'	=> 'link',
 		#	'feed'		=> 'http://www.debian.org/security/dsa-long'
+		#	'upgrades'	=> [('debsecan --format packages', $apt_show_versions, $aptitude)],
+		#	'revsplit'	=> '-'
 		#},
 		#'Redhat' => {
 		#	'pkgtype'	=> 'rpm',
@@ -52,6 +59,7 @@ my %config = (
 			'pkgquery'	=> 'rpm -q',
 			'pkgsource'	=> 'description',
 			'feed'		=> 'https://admin.fedoraproject.org/updates/rss/rss2.0?type=security'
+			# FIXME: define revsplit
 		}
 	},
 	'pkg' => {
@@ -73,10 +81,23 @@ my $silent = 0;
 my $debug = 0;
 my %opts;
 
-getopts('svo:', \%opts);
+getopts('hsvduV', \%opts);
+
+if($opts{'h'}) {
+	print "\nUsage: $0 -hsvduV\n\n";
+	print "	-h	Print this help text.\n";
+	print "	-s	Silent mode. Only print warnings and errors.\n";
+	print " -v	Verbose mode. Explains about skipped vulnerabilites.\n";
+	print " -d	Debug mode. Explains about version comparisons.\n";
+	print "	-u	Check for security upgrades with OS specific check.\n";
+	print "	-V	Disable feed based checking.\n";
+	print "\n";
+	exit(0);
+}
 
 $silent = 1 if($opts{'s'});
 $verbose = 1 if($opts{'v'});
+$debug = 1 if($opts{'d'});
 
 # Check for color support
 unless(-t 1 and `tput colors` >= 8) {
@@ -122,10 +143,68 @@ print scalar $packageList =~ tr/\n// unless($silent);
 print " $os packages are installed.\n" unless($silent);
 
 ################################################################################
+# Compare two versions 
+#
+# $1	a safe version
+# $2	the version to check if it is safe
+#
+# Returns
+#	-1	if first version is older
+#	0	for identical or package with higher revision
+#	1	if first version is newer
+################################################################################
+sub compare_versions {
+	my ($version1, $version2) = @_;
+	my $result = 0;
+
+	# Split everything
+	print "Compare $version1 <=> $version2... " if($debug);
+	if($version1 ne $version2) {
+
+	if($osConfig->{'pkgtype'} eq 'deb') {
+		`dpkg --compare-versions "$version1" eq "$version2"`;
+		if($? != 0) {
+			`dpkg --compare-versions "$version1" lt "$version2"`;
+			if($? == 0) {
+				$result = -1;
+
+				# We need to analyze revisions before deciding
+				# this case to distinguish cases like those:
+				#
+				# 	1.2.0-3ubuntu1.3 < 1.2.0-3.ubuntu1.2 (MATCH)
+				# and
+				#	1.2.0-3ubuntu1.3 < 1.5.0-4.ubuntu1.0 (MISS)
+				#
+				# So we compare versions and revisions
+				if(defined($osConfig->{'revsplit'})) {
+					my @tmp1 = split /$osConfig->{'revsplit'}/, $version1;
+					my @tmp2 = split /$osConfig->{'revsplit'}/, $version2;
+					$result = 0 if($tmp1[0] eq $tmp2[0]);
+					print "    revision detail: version #1: $tmp1[0] version #2: $tmp2[0] => " if($debug);
+				}
+			} else {
+				$result = 1;
+			}
+		} elsif($osConfig->{'pkgtype'} eq 'rpm') {
+			my $dir = dirname($0);
+			`$dir/rpm_vercmp.py "$version1" "$version2"`;
+			$result = $?;
+		} else {
+			die "No version comparison for this pkgtype yet.";
+		}
+	}
+	}
+
+	print $result . "\n" if($debug);
+	return $result;
+}
+
+unless(defined($opts{'V'})) {
+
+################################################################################
 # Fetch Advisory Feed
 ################################################################################
 
-# Download Feed
 print "Downloading advisory feed '$osConfig->{feed}' ...\n" unless($silent);
 
 my $ua = LWP::UserAgent->new;
@@ -189,33 +268,6 @@ my $doc = $parser->parse_string($stylesheet->output_string($results));
 
 ################################################################################
 # Process Advisories
-################################################################################
-
-################################################################################
-# Split a version in Debian format and compare it's parts. As it works fine for
-# RPM too we do not use a separate comparison for now.
-################################################################################
-sub compare_versions {
-	my ($version1, $version2) = @_;
-
-	# Split everything
-	print "Compare $version1 <=> $version2...\n" if($debug);
-	return 0 if($version1 eq $version2);
-
-	if($osConfig->{'pkgtype'} eq 'deb') {
-		`dpkg --compare-versions "$version1" lt "$version2"`;
-		return $?;
-	} elsif($osConfig->{'pkgtype'} eq 'rpm') {
-		my $dir = dirname($0);
-		`$dir/rpm_vercmp.py "$version1" "$version2"`;
-		return $?;
-	} else {
-		die "No version comparison for this pkgtype yet.";
-	}
-}
-
-################################################################################
-# Main
 ################################################################################
 
 foreach my $item ($doc->documentElement()->getChildrenByTagName("item")) {
@@ -310,7 +362,7 @@ foreach my $item ($doc->documentElement()->getChildrenByTagName("item")) {
 				print "$title\n";
 				print "   -> Vulnerable '$package' version $installedVersion installed!\n\n";
 				print color 'reset';
-				print "      You should update to the following version:\n\n";
+				print "      You should update to one the following versions:\n\n";
 				foreach my $version (keys %{${$packages{$package}}}) {
 					print "         $version\n";
 				}
@@ -334,6 +386,26 @@ foreach my $item ($doc->documentElement()->getChildrenByTagName("item")) {
 			}
 		}
 		print color 'reset';
+	}
+}
+}
+
+# Check for other uninstalled security upgrades (not listed by security feed)
+if($opts{'u'}) {
+	if(defined($osConfig->{'upgrades'})) {
+		foreach(@{$osConfig->{'upgrades'}}) {
+			my $output = `$_ 2>&1`;
+			if($? eq 0) {	
+				print color 'bold yellow';
+				# FIXME: Useful warning output
+				print "WARNING: '$_' reports additional available security upgrades:\n";
+				print $output . "\n";
+				print color 'reset';
+				last;
+			}
+		}
+	} else {
+		print "WARNING: Sorry, no upgrade check supported for this distro!\n";
 	}
 }
 
