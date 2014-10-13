@@ -44,7 +44,7 @@ my %config = (
 		#'Debian' => {
 		#	'pkgtype'	=> 'deb',
 		#	'pkgsource'	=> 'link',
-		#	'feed'		=> 'http://www.debian.org/security/dsa-long'
+		#	'feed'		=> 'http://www.debian.org/security/dsa-long',
 		#	'upgrades'	=> [('debsecan --format packages', $apt_show_versions, $aptitude)],
 		#	'revsplit'	=> '(-|~)'
 		#},
