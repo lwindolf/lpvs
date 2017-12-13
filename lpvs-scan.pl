@@ -58,7 +58,7 @@ my %config = (
 			'pkgtype'	=> 'rpm',
 			'pkgquery'	=> 'rpm -q',
 			'pkgsource'	=> 'description',
-			'feed'		=> 'https://admin.fedoraproject.org/updates/rss/rss2.0?type=security'
+			'feed'		=> 'https://bodhi.fedoraproject.org/rss/updates/?type=security'
 			# FIXME: define revsplit
 		}
 	},
